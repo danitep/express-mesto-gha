@@ -2,10 +2,14 @@ const User = require('../models/user');
 
 // Обработка ошибок
 function checkCreatingRequest(name, about, avatar) {
+  const err = new Error('Некорректные введённые данные');
+  err.name = 'Bad Request';
+  err.status = 400;
   if (!name || !about || !avatar) {
-    const err = new Error('Некорректные введённые данные');
-    err.name = 'Bad Request';
-    err.status = 400;
+    throw err;
+  } else if (name.lenght < 2 || name.lenght > 30) {
+    throw err;
+  } else if (about.lenght < 2 || about.lenght > 30) {
     throw err;
   }
 }
@@ -41,10 +45,14 @@ function sendError(res, err) {
 }
 function checkUpdatingRequest(body) {
   const { name, about, avatar } = body;
+  const err = new Error('Некорректные введённые данные');
+  err.name = 'Bad Request';
+  err.status = 400;
   if (!name && !about && !avatar) {
-    const err = new Error('Некорректные введённые данные');
-    err.name = 'Bad Request';
-    err.status = 400;
+    throw err;
+  } else if (name.lenght < 2 || name.lenght > 30) {
+    throw err;
+  } else if (about.lenght < 2 || about.lenght > 30) {
     throw err;
   }
 }

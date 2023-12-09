@@ -3,10 +3,12 @@ const Card = require('../models/card');
 
 // Обработка ошибок
 function checkCreatingRequest(name, link) {
+  const err = new Error('Некорректные введённые данные (отсутствуют основные поля)');
+  err.name = 'Bad Request';
+  err.status = 400;
   if (!name || !link) {
-    const err = new Error('Некорректные введённые данные (отсутствуют основные поля)');
-    err.name = 'Bad Request';
-    err.status = 400;
+    throw err;
+  } else if (name.lenght < 2 || name.lenght > 30) {
     throw err;
   }
 }
@@ -67,8 +69,8 @@ module.exports.createCard = (req, res) => {
   }
 };
 
-module.exports.getCardById = (req, res) => {
-  Card.findById(req.params.id)
+module.exports.deleteCard = (req, res) => {
+  Card.findByIdAndDelete(req.params.cardId)
     .then((card) => {
       checkSendining(card);
       sendData(res, card);
