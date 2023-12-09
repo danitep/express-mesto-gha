@@ -37,6 +37,10 @@ function sendError(res, err) {
     status = 400;
     message = 'Некорректные введённые данные (ссылка или объект json)';
   }
+  if (err.name === 'ValidationError') {
+    status = 400;
+    message = 'Некорректные введённые данные (значения параметров некорректны)';
+  }
   if (!status) {
     status = 500;
   }
