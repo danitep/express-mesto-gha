@@ -7,10 +7,14 @@ function checkCreatingRequest(name, about, avatar) {
   err.status = 400;
   if (!name || !about || !avatar) {
     throw err;
-  } else if (name.lenght < 2 || name.lenght > 30) {
-    throw err;
-  } else if (about.lenght < 2 || about.lenght > 30) {
-    throw err;
+  } else if (name) {
+    if (name.lenght < 2 || name.lenght > 30) {
+      throw err;
+    }
+  } else if (about) {
+    if (about.lenght < 2 || about.lenght > 30) {
+      throw err;
+    }
   }
 }
 function checkSendining(user) {
