@@ -23,13 +23,11 @@ app.use('/users', require('./routes/users'));
 app.use('/cards', require('./routes/cards'));
 
 app.patch('/', (req, res) => {
-  try {
-    const err = new Error('Неверный путь');
-    err.name = 'Not Found';
-    err.status = 404;
-  } catch (err) {
-    res.status(err.status).send(err.message);
-  }
+  const err = new Error('Неверный путь');
+  err.name = 'Not Found';
+  err.status = 404;
+  const { message } = err;
+  res.status(err.status).send({ message });
 });
 
 app.listen(PORT, () => {
