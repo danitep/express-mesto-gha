@@ -22,6 +22,16 @@ app.use((req, res, next) => {
 app.use('/users', require('./routes/users'));
 app.use('/cards', require('./routes/cards'));
 
+app.patch('/', (req, res) => {
+  try {
+    const err = new Error('Неверный путь');
+    err.name = 'Not Found';
+    err.status = 404;
+  } catch (err) {
+    res.status(err.status).send(err.message);
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
 });
