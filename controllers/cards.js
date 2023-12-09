@@ -8,7 +8,7 @@ function checkCreatingRequest(name, link) {
   err.status = 400;
   if (!name || !link) {
     throw err;
-  } else if (name.lenght < 2 || name.lenght > 30) {
+  } else if (name.length < 2 || name.length > 30) {
     throw err;
   }
 }
