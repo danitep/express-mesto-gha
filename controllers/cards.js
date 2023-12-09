@@ -16,7 +16,7 @@ function checkSendining(card) {
   if (!card) {
     const err = new Error('Карточка не найдена');
     err.name = 'NotFoundError';
-    err.status = '404';
+    err.status = 404;
     throw err;
   }
 }
@@ -24,7 +24,7 @@ function checkSendiningAllCards(cards) {
   if (!cards[0]) {
     const err = new Error('Карточки не найдены');
     err.name = 'NotFoundError';
-    err.status = '404';
+    err.status = 404;
     throw err;
   }
 }
