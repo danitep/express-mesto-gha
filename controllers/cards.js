@@ -31,6 +31,9 @@ function checkSendiningAllCards(cards) {
 function sendData(res, data) {
   res.send(data);
 }
+function sendCreatedData(res, data) {
+  res.status(201).send(data);
+}
 function sendError(res, err) {
   let { status, message } = err;
   if (err.name === 'CastError') {
@@ -65,7 +68,7 @@ module.exports.createCard = (req, res) => {
     Card.create({ name, link, owner })
       .then((card) => {
         checkSendining(card);
-        sendData(res, card);
+        sendCreatedData(res, card);
       })
       .catch((err) => sendError(res, err));
   } catch (err) {

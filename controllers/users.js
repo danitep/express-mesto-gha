@@ -7,10 +7,6 @@ function checkCreatingRequest(name, about, avatar) {
   err.status = 400;
   if (!name || !about || !avatar) {
     throw err;
-  } if (name.lenght < 2 || name.lenght > 30) {
-    throw err;
-  } else if (about.lenght < 2 || about.lenght > 30) {
-    throw err;
   }
 }
 function checkSendining(user) {
@@ -32,6 +28,9 @@ function checkSendiningAllUsers(users) {
 function sendData(res, data) {
   res.send(data);
 }
+function sendCreatedData(res, data) {
+  res.status(201).send(data);
+}
 function sendError(res, err) {
   let { status, message } = err;
   if (err.name === 'CastError') {
@@ -40,12 +39,11 @@ function sendError(res, err) {
   }
   if (err.name === 'ValidationError') {
     status = 400;
-    message = 'Некорректные введённые данные (значения параметров некорректны)';
   }
   if (!status) {
     status = 500;
   }
-  res.status(status).send({ err, message });
+  res.status(status).send({ message });
 }
 function checkUpdatingRequest(body) {
   const { name, about, avatar } = body;
@@ -54,14 +52,6 @@ function checkUpdatingRequest(body) {
   err.status = 400;
   if (!name && !about && !avatar) {
     throw err;
-  } else if (name) {
-    if (name.length < 2 || name.length > 30) {
-      throw err;
-    }
-  } else if (about) {
-    if (about.length < 2 || about.length > 30) {
-      throw err;
-    }
   }
 }
 function checkAvatarUpdatingRequest(body) {
@@ -82,7 +72,7 @@ module.exports.createUser = (req, res) => {
     User.create({ name, about, avatar })
       .then((user) => {
         checkSendining(user);
-        sendData(res, user);
+        sendCreatedData(res, user);
       })
       .catch((err) => sendError(res, err));
   } catch (err) {
@@ -111,7 +101,10 @@ module.exports.getAllUsers = (req, res) => {
 module.exports.updatePorfile = (req, res) => {
   try {
     checkUpdatingRequest(req.body);
-    User.findByIdAndUpdate(req.user._id, req.body, { new: true })
+    User.findByIdAndUpdate(req.user._id, req.body, {
+      new: true,
+      runValidators: true,
+    })
       .then((user) => {
         checkSendining(user);
         sendData(res, user);
@@ -125,7 +118,10 @@ module.exports.updatePorfile = (req, res) => {
 module.exports.updateAvatar = (req, res) => {
   try {
     checkAvatarUpdatingRequest(req.body);
-    User.findByIdAndUpdate(req.user._id, { avatar: req.body.avatar }, { new: true })
+    User.findByIdAndUpdate(req.user._id, { avatar: req.body.avatar }, {
+      new: true,
+      runValidators: true,
+    })
       .then((user) => {
         checkSendining(user);
         sendData(res, user);
