@@ -1,31 +1,25 @@
 const { isValidObjectId } = require('mongoose');
 const Card = require('../models/card');
+const NotFound = require('../errors/not-found-err');
+const BadRequest = require('../errors/bad-request');
+const Forbidden = require('../errors/forbidden-err');
 
 // Обработка ошибок
 function checkCreatingRequest(name, link) {
-  const err = new Error('Некорректные введённые данные (отсутствуют основные поля)');
-  err.name = 'Bad Request';
-  err.status = 400;
   if (!name || !link) {
-    throw err;
+    throw new BadRequest('Некорректные введённые данные (отсутствуют основные поля)');
   } else if (name.length < 2 || name.length > 30) {
-    throw err;
+    throw new BadRequest('Некорректные введённые данные (отсутствуют основные поля)');
   }
 }
 function checkSendining(card) {
   if (!card) {
-    const err = new Error('Карточка не найдена');
-    err.name = 'NotFoundError';
-    err.status = 404;
-    throw err;
+    throw new NotFound('Карточка не найдена');
   }
 }
 function checkSendiningAllCards(cards) {
   if (!cards[0]) {
-    const err = new Error('Карточки не найдены');
-    err.name = 'NotFoundError';
-    err.status = 404;
-    throw err;
+    throw new NotFound('Карточки не найдены');
   }
 }
 function sendData(res, data) {
@@ -34,33 +28,16 @@ function sendData(res, data) {
 function sendCreatedData(res, data) {
   res.status(201).send(data);
 }
-function sendError(res, err) {
-  let { status, message } = err;
-  if (err.name === 'CastError') {
-    status = 400;
-    message = 'Некорректные введённые данные (ссылка или объект json)';
-  }
-  if (err.name === 'ValidationError') {
-    status = 400;
-    message = 'Некорректные введённые данные (значения параметров некорректны)';
-  }
-  if (!status) {
-    status = 500;
-  }
-  res.status(status).send({ message });
-}
+
 function checkUpdatingRequest(req) {
   const { cardId } = req.params;
   if (!isValidObjectId(cardId)) {
-    const err = new Error('Некорректные введённые данные(id карточки)');
-    err.name = 'Bad Request';
-    err.status = 400;
-    throw err;
+    throw new BadRequest('Некорректные введённые данные(id карточки)');
   }
 }
 
 // Контроллеры
-module.exports.createCard = (req, res) => {
+module.exports.createCard = (req, res, next) => {
   try {
     const owner = req.user._id;
     const { name, link } = req.body;
@@ -70,31 +47,40 @@ module.exports.createCard = (req, res) => {
         checkSendining(card);
         sendCreatedData(res, card);
       })
-      .catch((err) => sendError(res, err));
+      .catch((err) => next(err));
   } catch (err) {
-    sendError(res, err);
+    next(err);
   }
 };
 
-module.exports.deleteCard = (req, res) => {
-  Card.findByIdAndDelete(req.params.cardId)
+module.exports.deleteCard = (req, res, next) => {
+  Card.findById(req.params.cardId)
+    // eslint-disable-next-line consistent-return
     .then((card) => {
       checkSendining(card);
-      sendData(res, card);
+      if (req.user._id !== card.owner.toHexString()) {
+        throw new Forbidden('Разрешено удаление только собственных карточек');
+      }
+      Card.deleteOne(card)
+        .then(() => {
+          checkSendining(card);
+          sendData(res, card);
+        })
+        .catch((err) => next(err));
     })
-    .catch((err) => sendError(res, err));
+    .catch((err) => next(err));
 };
 
-module.exports.getAllCards = (req, res) => {
+module.exports.getAllCards = (req, res, next) => {
   Card.find({})
     .then((cards) => {
       checkSendiningAllCards(cards);
       sendData(res, cards);
     })
-    .catch((err) => sendError(res, err));
+    .catch((err) => next(err));
 };
 
-module.exports.likeCard = (req, res) => {
+module.exports.likeCard = (req, res, next) => {
   try {
     checkUpdatingRequest(req);
     Card.findByIdAndUpdate(
@@ -106,13 +92,13 @@ module.exports.likeCard = (req, res) => {
         checkSendining(card);
         sendData(res, card);
       })
-      .catch((err) => sendError(res, err));
+      .catch((err) => next(err));
   } catch (err) {
-    sendError(res, err);
+    next(err);
   }
 };
 
-module.exports.dislikeCard = (req, res) => {
+module.exports.dislikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $pull: { likes: req.user._id } }, // убрать _id из массива
@@ -122,5 +108,5 @@ module.exports.dislikeCard = (req, res) => {
       checkSendining(card);
       sendData(res, card);
     })
-    .catch((err) => sendError(res, err));
+    .catch((err) => next(err));
 };

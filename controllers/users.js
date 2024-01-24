@@ -1,57 +1,47 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const BadRequest = require('../errors/bad-request');
+const NotFoundError = require('../errors/not-found-err');
 
 // Обработка ошибок
-function checkCreatingRequest(name, about, avatar) {
-  const err = new Error('Некорректные введённые данные');
-  err.name = 'Bad Request';
-  err.status = 400;
-  if (!name || !about || !avatar) {
-    throw err;
+function checkCreatingRequest(name, about, avatar, email, password) {
+  if (!email || !password) {
+    throw new BadRequest('Некорректные введённые данные');
   }
 }
 function checkSendining(user) {
   if (!user) {
-    const err = new Error('Пользователь не найден');
-    err.name = 'NotFoundError';
-    err.status = '404';
-    throw err;
+    throw new NotFoundError('Пользователь не найден');
   }
 }
 function checkSendiningAllUsers(users) {
   if (!users[0]) {
-    const err = new Error('Пользователи не найдены');
-    err.name = 'NotFoundError';
-    err.status = '404';
-    throw err;
+    throw new NotFoundError('Пользователи не найдены');
   }
 }
 function sendData(res, data) {
   res.send(data);
 }
 function sendCreatedData(res, data) {
-  res.status(201).send(data);
+  const {
+    name,
+    about,
+    avatar,
+    email,
+  } = data;
+  res.status(201).send({
+    name,
+    about,
+    avatar,
+    email,
+  });
 }
-function sendError(res, err) {
-  let { status, message } = err;
-  if (err.name === 'CastError') {
-    status = 400;
-    message = 'Некорректные введённые данные';
-  }
-  if (err.name === 'ValidationError') {
-    status = 400;
-  }
-  if (!status) {
-    status = 500;
-  }
-  res.status(status).send({ message });
-}
+
 function checkUpdatingRequest(body) {
   const { name, about, avatar } = body;
-  const err = new Error('Некорректные введённые данные');
-  err.name = 'Bad Request';
-  err.status = 400;
   if (!name && !about && !avatar) {
-    throw err;
+    throw new BadRequest('Некорректные введённые данные');
   }
 }
 function checkAvatarUpdatingRequest(body) {
@@ -65,40 +55,62 @@ function checkAvatarUpdatingRequest(body) {
 }
 
 // Контроллеры
-module.exports.createUser = (req, res) => {
+module.exports.createUser = (req, res, next) => {
   try {
-    const { name, about, avatar } = req.body;
-    checkCreatingRequest(name, about, avatar);
-    User.create({ name, about, avatar })
+    const {
+      name,
+      about,
+      avatar,
+      email,
+      password,
+    } = req.body;
+    checkCreatingRequest(name, about, avatar, email, password);
+    bcrypt.hash(req.body.password, 10)
+      .then((hash) => User.create({
+        name,
+        about,
+        avatar,
+        email,
+        password: hash,
+      }))
       .then((user) => {
         checkSendining(user);
         sendCreatedData(res, user);
       })
-      .catch((err) => sendError(res, err));
+      .catch((err) => next(err));
   } catch (err) {
-    sendError(res, err);
+    next(err);
   }
 };
 
-module.exports.getUserById = (req, res) => {
+module.exports.getUserById = (req, res, next) => {
   User.findById(req.params.id)
     .then((user) => {
       checkSendining(user);
       sendData(res, user);
     })
-    .catch((err) => sendError(res, err));
+    .catch((err) => next(err));
 };
 
-module.exports.getAllUsers = (req, res) => {
+module.exports.getCurrentUser = (req, res, next) => {
+  User.findById(req.user._id)
+    .then((user) => {
+      checkSendining(user);
+      sendData(res, user);
+    })
+    .catch((err) => next(err));
+};
+
+module.exports.getAllUsers = (req, res, next) => {
   User.find({})
     .then((users) => {
       checkSendiningAllUsers(users);
       sendData(res, users);
     })
-    .catch((err) => sendError(res, err));
+    .catch((err) => next(err));
 };
 
-module.exports.updatePorfile = (req, res) => {
+module.exports.updatePorfile = (req, res, next) => {
   try {
     checkUpdatingRequest(req.body);
     User.findByIdAndUpdate(req.user._id, req.body, {
@@ -109,13 +121,13 @@ module.exports.updatePorfile = (req, res) => {
         checkSendining(user);
         sendData(res, user);
       })
-      .catch((err) => sendError(res, err));
+      .catch((err) => next(err));
   } catch (err) {
-    sendError(res, err);
+    next(err);
   }
 };
 
-module.exports.updateAvatar = (req, res) => {
+module.exports.updateAvatar = (req, res, next) => {
   try {
     checkAvatarUpdatingRequest(req.body);
     User.findByIdAndUpdate(req.user._id, { avatar: req.body.avatar }, {
@@ -126,8 +138,22 @@ module.exports.updateAvatar = (req, res) => {
         checkSendining(user);
         sendData(res, user);
       })
-      .catch((err) => sendError(res, err));
+      .catch((err) => next(err));
   } catch (err) {
-    sendError(res, err);
+    next(err);
   }
+};
+
+module.exports.login = (req, res, next) => {
+  const { email, password } = req.body;
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign(
+        { _id: user._id },
+        'some-secret-key',
+        { expiresIn: '7d' },
+      );
+      res.send({ token });
+    })
+    .catch((err) => next(err));
 };
