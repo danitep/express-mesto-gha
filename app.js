@@ -2,9 +2,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const { errors } = require('celebrate');
+const helmet = require('helmet');
+const NotFoundError = require('./errors/not-found-err');
 
 const { PORT = 3000, DB_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
-const helmet = require('helmet');
+
 const auth = require('./middlewares/auth');
 
 const app = express();
@@ -26,12 +28,8 @@ app.use(auth);
 app.use('/users', require('./routes/users'));
 app.use('/cards', require('./routes/cards'));
 
-app.all('/:any', (req, res) => {
-  const err = new Error('Неверный путь');
-  err.name = 'Not Found';
-  err.status = 404;
-  const { message } = err;
-  res.status(err.status).send({ message });
+app.all('/:any', () => {
+  throw new NotFoundError('Неверный путь');
 });
 
 app.use(errors());
@@ -42,7 +40,7 @@ app.use((err, req, res, next) => {
   } else if (err.statusCode) {
     res.status(err.statusCode).send({ message: err.message });
   } else {
-    // res.status(500).send({ message: 'Произошла ошибка на сервере' });
+    res.status(500).send({ message: 'Произошла ошибка на сервере' });
   }
 });
 
