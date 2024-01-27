@@ -16,4 +16,4 @@
 `npm run dev` — запускает сервер с hot-reload
 
 ## Ссылка на репозиторий
-[https://danitep.github.io/express-mesto-gha/](https://github.com/danitep/express-mesto-gha)https://github.com/danitep/express-mesto-gha
+https://github.com/danitep/express-mesto-gha
