@@ -4,6 +4,8 @@ const NotFound = require('../errors/not-found-err');
 const BadRequest = require('../errors/bad-request');
 const Forbidden = require('../errors/forbidden-err');
 
+const { STATUS_CREATED } = process.env;
+
 // Обработка ошибок
 function checkCreatingRequest(name, link) {
   if (!name || !link) {
@@ -26,7 +28,7 @@ function sendData(res, data) {
   res.send(data);
 }
 function sendCreatedData(res, data) {
-  res.status(201).send(data);
+  res.status(STATUS_CREATED).send(data);
 }
 
 function checkUpdatingRequest(req) {

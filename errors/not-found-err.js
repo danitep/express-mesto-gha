@@ -1,7 +1,7 @@
 class NotFound extends Error {
   constructor(message) {
     super(message);
-    this.statusCode = 404;
+    this.statusCode = process.env.STATUS_NOT_FOUND;
   }
 }
 
